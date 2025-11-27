@@ -3,8 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_controller.dart';
-import '../../style/my_button.dart';
-import '../../style/palette.dart';
+import '../../ui/ui_kit.dart';
 import '../../style/responsive_screen.dart';
 import '../controllers/room_controller.dart';
 import '../models/game_definition.dart';
@@ -34,30 +33,52 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.watch<Palette>();
+    final palette = Palette();
     final authController = context.watch<AuthController>();
     final roomController = context.watch<RoomController>();
 
     return Scaffold(
-      backgroundColor: palette.backgroundMain,
-      body: ResponsiveScreen(
-        topMessageArea: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Welcome, ${authController.profile?.username ?? "Player"}',
-              style: TextStyle(
-                fontFamily: palette.titleFontFamily,
-                fontSize: 16,
-              ),
-            ),
-            TextButton(
-              onPressed: () => authController.signOut(),
-              child: const Text('Sign Out'),
-            ),
-          ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: palette.backgroundGradient,
         ),
-        squarishMainArea: Column(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // User Header
+              if (authController.profile != null)
+                UserHeader(
+                  username: authController.profile!.username ?? 'Player',
+                  balance: '\$12,500', // TODO: Get real balance
+                  avatarUrl: authController.profile!.avatarUrl,
+                  onBuyCoins: () {
+                    // TODO: Navigate to shop
+                  },
+                  onProfileTap: () {
+                    // TODO: Navigate to profile
+                  },
+                  onLogout: () async {
+                    final confirmed = await ConfirmDialog.show(
+                      context: context,
+                      title: 'Logout',
+                      message: 'Are you sure you want to logout?',
+                      confirmText: 'Logout',
+                      cancelText: 'Cancel',
+                    );
+
+                    if (confirmed && mounted) {
+                      await authController.signOut();
+                      if (mounted) {
+                        context.go('/auth');
+                      }
+                    }
+                  },
+                ),
+
+              // Main content
+              Expanded(
+                child: ResponsiveScreen(
+                  squarishMainArea: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Game selector
@@ -110,25 +131,35 @@ class _LobbyScreenState extends State<LobbyScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Public Rooms',
-                    style: TextStyle(
-                      fontFamily: palette.titleFontFamily,
-                      fontSize: 20,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'PUBLIC ROOMS',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: palette.textPrimary,
+                        letterSpacing: 1.0,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Expanded(
                     child: roomController.isLoading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const CMLoadingIndicator(
+                            message: 'Loading rooms...',
+                          )
                         : roomController.publicRooms.isEmpty
-                            ? Center(
-                                child: Text(
-                                  'No public rooms available.\nCreate one to get started!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: palette.ink.withValues(alpha: 0.6),
-                                  ),
+                            ? EmptyState(
+                                icon: Icons.inbox,
+                                title: 'No rooms available',
+                                message:
+                                    'Create a new room to get started!',
+                                action: PrimaryButton(
+                                  text: 'Create Room',
+                                  onPressed: () =>
+                                      _showCreateRoomDialog(context),
+                                  icon: Icons.add,
                                 ),
                               )
                             : RefreshIndicator(
@@ -137,35 +168,35 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                   gameId: _selectedGameId,
                                 ),
                                 child: ListView.builder(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   itemCount: roomController.publicRooms.length,
                                   itemBuilder: (context, index) {
                                     final room =
                                         roomController.publicRooms[index];
-                                    return _RoomCard(
-                                      room: room,
-                                      game: roomController.gameDefinitions
-                                          .firstWhere(
-                                        (g) => g.id == room.gameId,
-                                        orElse: () => GameDefinition(
-                                          id: room.gameId,
-                                          name: 'Unknown Game',
-                                          description: '',
-                                          minPlayers: 2,
-                                          maxPlayers: 4,
-                                          defaultConfig: const {},
-                                          isActive: true,
-                                          createdAt: DateTime.now(),
-                                        ),
-                                      ),
-                                      onJoin: () async {
-                                        final success =
-                                            await roomController.joinRoom(
-                                          room.id,
-                                        );
-                                        if (success && mounted) {
-                                          context.go('/room/${room.id}');
-                                        }
-                                      },
+                                    final playerCount =
+                                        room.memberCount ?? 0;
+                                    final isFull =
+                                        playerCount >= room.maxPlayers;
+
+                                    return RoomCard(
+                                      roomName: '${index + 1}. "${room.name}"',
+                                      stake: '\$100', // TODO: Get real stake
+                                      playerCount:
+                                          '($playerCount/${room.maxPlayers})',
+                                      isFull: isFull,
+                                      onJoin: isFull
+                                          ? null
+                                          : () async {
+                                              final success =
+                                                  await roomController
+                                                      .joinRoom(room.id);
+                                              if (success && mounted) {
+                                                context
+                                                    .go('/room/${room.id}');
+                                              }
+                                            },
                                     );
                                   },
                                 ),
@@ -176,25 +207,39 @@ class _LobbyScreenState extends State<LobbyScreen> {
             ),
           ],
         ),
-        rectangularMenuArea: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            MyButton(
-              onPressed: () => _showCreateRoomDialog(context),
-              child: const Text('Create Room'),
-            ),
-            const SizedBox(height: 12),
-            MyButton(
-              onPressed: () => _showJoinByCodeDialog(context),
-              child: const Text('Join by Code'),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () =>
-                  roomController.fetchPublicRooms(gameId: _selectedGameId),
-              child: const Text('Refresh'),
-            ),
-          ],
+                  rectangularMenuArea: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PrimaryButton(
+                          text: 'Create Room',
+                          onPressed: () => _showCreateRoomDialog(context),
+                          icon: Icons.add,
+                          width: double.infinity,
+                        ),
+                        const SizedBox(height: 12),
+                        SecondaryButton(
+                          text: 'Join by Code',
+                          onPressed: () => _showJoinByCodeDialog(context),
+                          icon: Icons.vpn_key,
+                          width: double.infinity,
+                        ),
+                        const SizedBox(height: 12),
+                        SecondaryButton(
+                          text: 'UI Demo',
+                          onPressed: () => context.go('/ui-demo'),
+                          icon: Icons.palette,
+                          width: double.infinity,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -202,7 +247,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   void _showCreateRoomDialog(BuildContext context) {
     final roomController = context.read<RoomController>();
-    final palette = context.read<Palette>();
+    final palette = Palette();
 
     if (roomController.gameDefinitions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -211,182 +256,165 @@ class _LobbyScreenState extends State<LobbyScreen> {
       return;
     }
 
-    final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
-    GameDefinition? selectedGame = roomController.gameDefinitions.first;
+    GameDefinition selectedGame = roomController.gameDefinitions.first;
     bool isPublic = true;
     int maxPlayers = selectedGame.maxPlayers;
 
-    showDialog(
+    CMDialog.show(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          backgroundColor: palette.backgroundMain,
-          title: Text(
-            'Create Room',
-            style: TextStyle(fontFamily: palette.titleFontFamily),
-          ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      title: 'Create Room',
+      dismissible: true,
+      content: StatefulBuilder(
+        builder: (context, setState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CMTextField(
+              hintText: 'Room Name',
+              controller: nameController,
+              prefixIcon: Icons.meeting_room,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Max Players: $maxPlayers',
+              style: TextStyle(
+                color: palette.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+            Slider(
+              value: maxPlayers.toDouble(),
+              min: selectedGame.minPlayers.toDouble(),
+              max: selectedGame.maxPlayers.toDouble(),
+              divisions:
+                  selectedGame.maxPlayers - selectedGame.minPlayers,
+              label: maxPlayers.toString(),
+              activeColor: palette.goldMedium,
+              onChanged: (value) {
+                setState(() {
+                  maxPlayers = value.toInt();
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            Row(
               children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Room Name',
-                    hintText: 'My Awesome Game',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a room name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<GameDefinition>(
-                  initialValue: selectedGame,
-                  decoration: const InputDecoration(labelText: 'Game'),
-                  items: roomController.gameDefinitions.map((game) {
-                    return DropdownMenuItem(
-                      value: game,
-                      child: Text(game.name),
-                    );
-                  }).toList(),
-                  onChanged: (game) {
-                    if (game != null) {
-                      setState(() {
-                        selectedGame = game;
-                        maxPlayers = game.maxPlayers;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Text('Max Players:'),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Slider(
-                        value: maxPlayers.toDouble(),
-                        min: selectedGame!.minPlayers.toDouble(),
-                        max: selectedGame!.maxPlayers.toDouble(),
-                        divisions: selectedGame!.maxPlayers -
-                            selectedGame!.minPlayers,
-                        label: maxPlayers.toString(),
-                        onChanged: (value) {
-                          setState(() {
-                            maxPlayers = value.toInt();
-                          });
-                        },
-                      ),
-                    ),
-                    Text(maxPlayers.toString()),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text('Public Room'),
-                  subtitle: Text(
-                    isPublic
-                        ? 'Anyone can join'
-                        : 'Invite code required to join',
-                  ),
+                Checkbox(
                   value: isPublic,
+                  activeColor: palette.goldMedium,
                   onChanged: (value) {
                     setState(() {
-                      isPublic = value;
+                      isPublic = value ?? true;
                     });
                   },
                 ),
+                Expanded(
+                  child: Text(
+                    isPublic
+                        ? 'Public Room (Anyone can join)'
+                        : 'Private Room (Invite code required)',
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                if (formKey.currentState!.validate() && selectedGame != null) {
-                  Navigator.of(dialogContext).pop();
-
-                  final room = await roomController.createRoom(
-                    gameId: selectedGame!.id,
-                    name: nameController.text,
-                    isPublic: isPublic,
-                    maxPlayers: maxPlayers,
-                  );
-
-                  if (room != null && context.mounted) {
-                    context.go('/room/${room.id}');
-                  }
-                }
-              },
-              child: const Text('Create'),
             ),
           ],
         ),
       ),
+      actions: [
+        SecondaryButton(
+          text: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
+          width: double.infinity,
+        ),
+        PrimaryButton(
+          text: 'Create',
+          onPressed: () async {
+            if (nameController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please enter a room name'),
+                ),
+              );
+              return;
+            }
+
+            Navigator.of(context).pop();
+
+            final room = await roomController.createRoom(
+              gameId: selectedGame.id,
+              name: nameController.text,
+              isPublic: isPublic,
+              maxPlayers: maxPlayers,
+            );
+
+            if (room != null && context.mounted) {
+              context.go('/room/${room.id}');
+            }
+          },
+          width: double.infinity,
+        ),
+      ],
     );
   }
 
   void _showJoinByCodeDialog(BuildContext context) {
     final roomController = context.read<RoomController>();
-    final palette = context.read<Palette>();
     final codeController = TextEditingController();
 
-    showDialog(
+    CMDialog.show(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: palette.backgroundMain,
-        title: Text(
-          'Join by Invite Code',
-          style: TextStyle(fontFamily: palette.titleFontFamily),
-        ),
-        content: TextField(
-          controller: codeController,
-          decoration: const InputDecoration(
-            labelText: 'Invite Code',
-            hintText: 'ABC123',
-          ),
-          textCapitalization: TextCapitalization.characters,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final code = codeController.text.trim().toUpperCase();
-              if (code.isEmpty) return;
-
-              Navigator.of(dialogContext).pop();
-
-              final success =
-                  await roomController.joinRoomByInviteCode(code);
-
-              if (success && context.mounted) {
-                context.go('/room/${roomController.currentRoom!.id}');
-              } else if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      roomController.error ?? 'Failed to join room',
-                    ),
-                  ),
-                );
-              }
-            },
-            child: const Text('Join'),
-          ),
-        ],
+      title: 'Join by Invite Code',
+      content: CMTextField(
+        hintText: 'Enter Invite Code',
+        controller: codeController,
+        prefixIcon: Icons.vpn_key,
       ),
+      actions: [
+        SecondaryButton(
+          text: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
+          width: double.infinity,
+        ),
+        PrimaryButton(
+          text: 'Join',
+          onPressed: () async {
+            final code = codeController.text.trim().toUpperCase();
+            if (code.isEmpty) return;
+
+            Navigator.of(context).pop();
+
+            LoadingDialog.show(
+              context: context,
+              message: 'Joining room...',
+            );
+
+            final success =
+                await roomController.joinRoomByInviteCode(code);
+
+            if (context.mounted) {
+              LoadingDialog.hide(context);
+            }
+
+            if (success && context.mounted) {
+              context.go('/room/${roomController.currentRoom!.id}');
+            } else if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    roomController.error ?? 'Failed to join room',
+                  ),
+                ),
+              );
+            }
+          },
+          width: double.infinity,
+        ),
+      ],
     );
   }
 }
@@ -404,151 +432,32 @@ class _GameChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.watch<Palette>();
+    final palette = Palette();
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(
-          name,
-          style: TextStyle(
-            color: isSelected ? palette.backgroundMain : palette.textPrimary,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? palette.goldMedium
+                : palette.backgroundElevated,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color:
+                  isSelected ? palette.goldMedium : palette.borderLight,
+              width: 2,
+            ),
           ),
-        ),
-        selected: isSelected,
-        onSelected: (_) => onTap(),
-        backgroundColor: palette.backgroundCard,
-        selectedColor: palette.gold,
-        side: BorderSide(
-          color: isSelected ? palette.gold : palette.backgroundCard,
-          width: isSelected ? 2 : 1,
-        ),
-        elevation: isSelected ? 4 : 0,
-        shadowColor: palette.gold.withValues(alpha: 0.5),
-      ),
-    );
-  }
-}
-
-class _RoomCard extends StatelessWidget {
-  final Room room;
-  final GameDefinition game;
-  final VoidCallback onJoin;
-
-  const _RoomCard({
-    required this.room,
-    required this.game,
-    required this.onJoin,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.watch<Palette>();
-    final playerCount = room.memberCount ?? 0;
-    final isAlmostFull = playerCount >= room.maxPlayers - 1;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      child: InkWell(
-        onTap: onJoin,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Room icon
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: palette.goldGradient,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.table_bar,
-                  color: palette.backgroundMain,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Room info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      room.name,
-                      style: TextStyle(
-                        fontFamily: palette.titleFontFamily,
-                        fontSize: 18,
-                        color: palette.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.casino_outlined,
-                          size: 14,
-                          color: palette.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          game.name,
-                          style: TextStyle(
-                            color: palette.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Icon(
-                          Icons.person_outline,
-                          size: 14,
-                          color: palette.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          room.hostUsername ?? "Unknown",
-                          style: TextStyle(
-                            color: palette.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.people_outline,
-                          size: 14,
-                          color: isAlmostFull ? palette.warning : palette.cyan,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$playerCount/${room.maxPlayers} players',
-                          style: TextStyle(
-                            color: isAlmostFull ? palette.warning : palette.cyan,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Join button
-              Icon(
-                Icons.arrow_forward_ios,
-                color: palette.gold,
-                size: 20,
-              ),
-            ],
+          child: Text(
+            name,
+            style: TextStyle(
+              color: isSelected ? palette.textOnGold : palette.textPrimary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 14,
+            ),
           ),
         ),
       ),

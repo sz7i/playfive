@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../style/my_button.dart';
-import '../style/palette.dart';
+import '../ui/ui_kit.dart';
 import '../style/responsive_screen.dart';
 import 'auth_controller.dart';
 
@@ -73,189 +72,194 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.watch<Palette>();
+    final palette = Palette();
 
     return Scaffold(
-      backgroundColor: palette.backgroundPlaySession,
-      body: ResponsiveScreen(
-        squarishMainArea: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Title
-                  Text(
-                    _isLogin ? 'Welcome Back!' : 'Join the Game',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: palette.ink,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isLogin
-                        ? 'Sign in to continue'
-                        : 'Create your account',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: palette.ink.withValues(alpha: 0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: palette.backgroundGradient,
+        ),
+        child: ResponsiveScreen(
+          squarishMainArea: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Logo Header
+                    const AppHeader(),
+                    const SizedBox(height: 32),
 
-                  // Email field
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: const Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    // Title
+                    Text(
+                      _isLogin ? 'WELCOME BACK!' : 'JOIN THE GAME',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: palette.textPrimary,
+                        letterSpacing: 1.5,
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
+                      textAlign: TextAlign.center,
                     ),
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    enabled: !_isLoading,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Username field (signup only)
-                  if (!_isLogin) ...[
-                    TextFormField(
-                      controller: _usernameController,
-                      decoration: InputDecoration(
-                        labelText: 'Username',
-                        prefixIcon: const Icon(Icons.person),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
+                    const SizedBox(height: 8),
+                    Text(
+                      _isLogin ? 'Sign in to continue' : 'Create your account',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: palette.textTertiary,
                       ),
-                      textInputAction: TextInputAction.next,
-                      enabled: !_isLoading,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a username';
-                        }
-                        if (value.length < 3) {
-                          return 'Username must be at least 3 characters';
-                        }
-                        if (value.length > 20) {
-                          return 'Username must be less than 20 characters';
-                        }
-                        return null;
-                      },
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 40),
+
+                    // Email field
+                    EmailField(
+                      hintText: 'Email Address',
+                      controller: _emailController,
                     ),
                     const SizedBox(height: 16),
-                  ],
 
-                  // Password field
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    // Username field (signup only)
+                    if (!_isLogin) ...[
+                      CMTextField(
+                        hintText: 'Username',
+                        prefixIcon: Icons.person,
+                        controller: _usernameController,
+                        enabled: !_isLoading,
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Password field
+                    PasswordField(
+                      hintText: 'Password',
+                      controller: _passwordController,
                     ),
-                    obscureText: true,
-                    textInputAction: TextInputAction.done,
-                    enabled: !_isLoading,
-                    onFieldSubmitted: (_) => _submit(),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Error message
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(8),
+                    // Error message
+                    if (_errorMessage != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: palette.error.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: palette.error,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: palette.error,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Submit button
+                    PrimaryButton(
+                      text: _isLogin ? 'Log In' : 'Sign Up',
+                      onPressed: _isLoading ? null : _submit,
+                      isLoading: _isLoading,
+                      width: double.infinity,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Divider
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: palette.borderLight,
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'Or continue with',
+                            style: TextStyle(
+                              color: palette.textTertiary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: palette.borderLight,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Social login buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SocialButton(
+                          icon: const Icon(
+                            Icons.g_mobiledata,
+                            color: Colors.red,
+                            size: 28,
+                          ),
+                          label: 'Google',
+                          onPressed: () {
+                            // TODO: Implement Google sign-in
+                          },
+                        ),
+                        const SizedBox(width: 16),
+                        SocialButton(
+                          icon: const Icon(
+                            Icons.apple,
+                            color: Colors.black,
+                            size: 24,
+                          ),
+                          label: 'Apple',
+                          onPressed: () {
+                            // TODO: Implement Apple sign-in
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Toggle login/signup
+                    TextButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              setState(() {
+                                _isLogin = !_isLogin;
+                                _errorMessage = null;
+                              });
+                            },
                       child: Text(
-                        _errorMessage!,
+                        _isLogin
+                            ? 'Don\'t have an account? Sign up'
+                            : 'Already have an account? Sign in',
                         style: TextStyle(
-                          color: Colors.red.shade900,
+                          color: palette.textSecondary,
                           fontSize: 14,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: 16),
                   ],
-
-                  // Submit button
-                  MyButton(
-                    onPressed: _isLoading ? null : _submit,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(_isLogin ? 'Sign In' : 'Sign Up'),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Toggle login/signup
-                  TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            setState(() {
-                              _isLogin = !_isLogin;
-                              _errorMessage = null;
-                            });
-                          },
-                    child: Text(
-                      _isLogin
-                          ? 'Don\'t have an account? Sign up'
-                          : 'Already have an account? Sign in',
-                      style: TextStyle(color: palette.ink),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
+          rectangularMenuArea: const SizedBox.shrink(),
         ),
-        rectangularMenuArea: const SizedBox.shrink(),
       ),
     );
   }
