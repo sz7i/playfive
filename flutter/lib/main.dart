@@ -7,6 +7,7 @@ import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -60,8 +61,30 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final AuthController _authController;
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _authController = AuthController();
+    _router = createRouter(_authController);
+  }
+
+  @override
+  void dispose() {
+    _authController.dispose();
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +99,7 @@ class MyApp extends StatelessWidget {
         providers: [
           Provider(create: (context) => SettingsController()),
           Provider(create: (context) => Palette()),
-          ChangeNotifierProvider(create: (context) => AuthController()),
+          ChangeNotifierProvider.value(value: _authController),
           ChangeNotifierProvider(create: (context) => RoomController()),
           ChangeNotifierProvider(create: (context) => PlayerProgress()),
           // Set up audio.
@@ -208,7 +231,7 @@ class MyApp extends StatelessWidget {
                   ),
                 ),
               ),
-              routerConfig: router,
+              routerConfig: _router,
             );
           },
         ),

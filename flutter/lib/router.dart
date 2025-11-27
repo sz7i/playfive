@@ -21,30 +21,30 @@ import 'win_game/win_game_screen.dart';
 
 /// The router describes the game's navigational hierarchy, from the main
 /// screen through settings screens all the way to each individual level.
-final router = GoRouter(
-  redirect: (context, state) {
-    final authController = context.read<AuthController>();
+GoRouter createRouter(AuthController authController) {
+  return GoRouter(
+    refreshListenable: authController,
+    redirect: (context, state) {
+      // Don't redirect while still loading auth state
+      if (authController.isLoading) {
+        return null;
+      }
 
-    // Don't redirect while still loading auth state
-    if (authController.isLoading) {
+      final isAuthenticated = authController.isAuthenticated;
+      final isAuthRoute = state.matchedLocation == '/auth';
+
+      // Redirect to auth if not authenticated and not already on auth screen
+      if (!isAuthenticated && !isAuthRoute) {
+        return '/auth';
+      }
+
+      // Redirect to home if authenticated and on auth screen
+      if (isAuthenticated && isAuthRoute) {
+        return '/';
+      }
+
       return null;
-    }
-
-    final isAuthenticated = authController.isAuthenticated;
-    final isAuthRoute = state.matchedLocation == '/auth';
-
-    // Redirect to auth if not authenticated and not already on auth screen
-    if (!isAuthenticated && !isAuthRoute) {
-      return '/auth';
-    }
-
-    // Redirect to home if authenticated and on auth screen
-    if (isAuthenticated && isAuthRoute) {
-      return '/';
-    }
-
-    return null;
-  },
+    },
   routes: [
     GoRoute(
       path: '/auth',
@@ -117,4 +117,5 @@ final router = GoRouter(
       ],
     ),
   ],
-);
+  );
+}

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../ui/ui_kit.dart';
@@ -54,9 +53,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
 
-      if (mounted) {
-        context.go('/');
-      }
+      // Router will automatically redirect to '/' when auth state updates
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
