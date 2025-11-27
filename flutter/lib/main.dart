@@ -14,6 +14,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app_lifecycle/app_lifecycle.dart';
 import 'audio/audio_controller.dart';
 import 'auth/auth_controller.dart';
+import 'multiplayer/controllers/room_controller.dart';
 import 'player_progress/player_progress.dart';
 import 'router.dart';
 import 'settings/settings.dart';
@@ -76,6 +77,7 @@ class MyApp extends StatelessWidget {
           Provider(create: (context) => SettingsController()),
           Provider(create: (context) => Palette()),
           ChangeNotifierProvider(create: (context) => AuthController()),
+          ChangeNotifierProvider(create: (context) => RoomController()),
           ChangeNotifierProvider(create: (context) => PlayerProgress()),
           // Set up audio.
           ProxyProvider2<
@@ -98,28 +100,114 @@ class MyApp extends StatelessWidget {
             final palette = context.watch<Palette>();
 
             return MaterialApp.router(
-              title: 'My Flutter Game',
-              theme:
-                  ThemeData.from(
-                    colorScheme: ColorScheme.fromSeed(
-                      seedColor: palette.darkPen,
-                      surface: palette.backgroundMain,
+              title: 'PlayFive - Multiplayer Card Games',
+              theme: ThemeData(
+                useMaterial3: true,
+                brightness: Brightness.dark,
+                colorScheme: ColorScheme.dark(
+                  primary: palette.gold,
+                  onPrimary: palette.backgroundMain,
+                  secondary: palette.cyan,
+                  onSecondary: palette.backgroundMain,
+                  error: palette.error,
+                  onError: palette.trueWhite,
+                  surface: palette.backgroundElevated,
+                  onSurface: palette.textPrimary,
+                  surfaceContainerHighest: palette.backgroundCard,
+                ),
+                scaffoldBackgroundColor: palette.backgroundMain,
+                cardTheme: CardThemeData(
+                  color: palette.backgroundCard,
+                  elevation: 4,
+                  shadowColor: Colors.black.withValues(alpha: 0.3),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                filledButtonTheme: FilledButtonThemeData(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: palette.gold,
+                    foregroundColor: palette.backgroundMain,
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      letterSpacing: 0.5,
                     ),
-                    textTheme: TextTheme(
-                      bodyMedium: TextStyle(color: palette.ink),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
                     ),
-                    useMaterial3: true,
-                  ).copyWith(
-                    // Make buttons more fun.
-                    filledButtonTheme: FilledButtonThemeData(
-                      style: FilledButton.styleFrom(
-                        textStyle: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 2,
+                  ),
+                ),
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(
+                    foregroundColor: palette.gold,
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
                     ),
                   ),
+                ),
+                inputDecorationTheme: InputDecorationTheme(
+                  filled: true,
+                  fillColor: palette.backgroundMain,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: palette.backgroundCard),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: palette.backgroundCard),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: palette.gold, width: 2),
+                  ),
+                  labelStyle: TextStyle(color: palette.textSecondary),
+                  hintStyle: TextStyle(color: palette.textDisabled),
+                ),
+                textTheme: TextTheme(
+                  displayLarge: TextStyle(
+                    fontFamily: palette.titleFontFamily,
+                    color: palette.gold,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  displayMedium: TextStyle(
+                    fontFamily: palette.titleFontFamily,
+                    color: palette.gold,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  titleLarge: TextStyle(
+                    fontFamily: palette.titleFontFamily,
+                    color: palette.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  titleMedium: TextStyle(
+                    color: palette.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  bodyLarge: TextStyle(
+                    color: palette.textPrimary,
+                    fontSize: 16,
+                  ),
+                  bodyMedium: TextStyle(
+                    color: palette.textPrimary,
+                    fontSize: 14,
+                  ),
+                  bodySmall: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
               routerConfig: router,
             );
           },

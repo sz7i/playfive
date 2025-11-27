@@ -4,35 +4,67 @@
 
 import 'package:flutter/material.dart';
 
-/// A palette of colors to be used in the game.
+/// Modern Card Table Theme - A sophisticated dark theme for card games
 ///
-/// The reason we're not going with something like Material Design's
-/// `Theme` is simply that this is simpler to work with and yet gives
-/// us everything we need for a game.
-///
-/// Games generally have more radical color palettes than apps. For example,
-/// every level of a game can have radically different colors.
-/// At the same time, games rarely support dark mode.
-///
-/// Colors taken from this fun palette:
-/// https://lospec.com/palette-list/crayola84
-///
-/// Colors here are implemented as getters so that hot reloading works.
-/// In practice, we could just as easily implement the colors
-/// as `static const`. But this way the palette is more malleable:
-/// we could allow players to customize colors, for example,
-/// or even get the colors from the network.
+/// Inspired by premium card rooms with a modern, clean aesthetic.
+/// Dark backgrounds reduce eye strain during long gaming sessions,
+/// while gold accents provide a premium feel.
 class Palette {
-  Color get pen => const Color(0xff1d75fb);
-  Color get darkPen => const Color(0xFF0050bc);
-  Color get redPen => const Color(0xFFd10841);
-  Color get inkFullOpacity => const Color(0xff352b42);
-  Color get ink => const Color(0xee352b42);
-  Color get accept => const Color(0xff15a44d);
-  Color get backgroundMain => const Color(0xffffd7ff);
-  Color get backgroundLevelSelection => const Color(0xffa2dcc7);
-  Color get backgroundPlaySession => const Color(0xffffebb5);
-  Color get background4 => const Color(0xffffffd1);
-  Color get backgroundSettings => const Color(0xffbfc8e3);
-  Color get trueWhite => const Color(0xffffffff);
+  // Background Colors - Dark, elegant card table aesthetic
+  Color get backgroundMain => const Color(0xFF0D1B2A); // Deep midnight blue
+  Color get backgroundElevated => const Color(0xFF1B263B); // Card table felt
+  Color get backgroundCard => const Color(0xFF415A77); // Lighter blue-gray
+  Color get backgroundPlayArea => const Color(0xFF1B263B); // Same as elevated
+  Color get backgroundPlaySession => const Color(0xFF1B263B);
+  Color get backgroundLevelSelection => const Color(0xFF1B263B);
+  Color get backgroundSettings => const Color(0xFF1B263B);
+
+  // Primary Accent - Warm gold for premium feel
+  Color get gold => const Color(0xFFFFB700);
+  Color get pen => const Color(0xFFFFB700); // Keep for compatibility
+  Color get darkPen => const Color(0xFFCC9200); // Darker gold
+
+  // Secondary Accent - Bright cyan for contrast
+  Color get cyan => const Color(0xFF00D9FF);
+
+  // Semantic Colors
+  Color get success => const Color(0xFF00C853); // Vibrant green
+  Color get error => const Color(0xFFFF1744); // Bright red
+  Color get redPen => const Color(0xFFFF1744); // Keep for compatibility
+  Color get warning => const Color(0xFFFF9100); // Orange
+  Color get accept => const Color(0xFF00C853); // Same as success
+
+  // Text Colors
+  Color get textPrimary => const Color(0xFFFFFFFF); // Pure white
+  Color get textSecondary => const Color(0xFFB0BEC5); // Light gray
+  Color get textDisabled => const Color(0xFF546E7A); // Medium gray
+  Color get ink => const Color(0xFFFFFFFF); // White for dark backgrounds
+  Color get inkFullOpacity => const Color(0xFFFFFFFF);
+
+  // Utility
+  Color get trueWhite => const Color(0xFFFFFFFF);
+  Color get surfaceOverlay => const Color(0x1AFFFFFF); // 10% white overlay
+
+  // Typography
+  String get titleFontFamily => 'Permanent Marker';
+  String get bodyFontFamily => 'Roboto';
+
+  // Gradients
+  LinearGradient get cardTableGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xFF1B263B),
+          const Color(0xFF0D1B2A),
+        ],
+      );
+
+  LinearGradient get goldGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xFFFFB700),
+          const Color(0xFFCC9200),
+        ],
+      );
 }

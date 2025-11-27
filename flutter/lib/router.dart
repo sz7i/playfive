@@ -10,6 +10,8 @@ import 'auth/auth_controller.dart';
 import 'auth/auth_screen.dart';
 import 'game_internals/score.dart';
 import 'main_menu/main_menu_screen.dart';
+import 'multiplayer/screens/lobby_screen.dart';
+import 'multiplayer/screens/room_screen.dart';
 import 'play_session/play_session_screen.dart';
 import 'settings/settings_screen.dart';
 import 'style/my_transition.dart';
@@ -49,6 +51,25 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/',
+      builder: (context, state) => const LobbyScreen(key: Key('lobby')),
+      routes: [
+        GoRoute(
+          path: 'settings',
+          builder: (context, state) =>
+              const SettingsScreen(key: Key('settings')),
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/room/:roomId',
+      builder: (context, state) {
+        final roomId = state.pathParameters['roomId']!;
+        return RoomScreen(roomId: roomId, key: Key('room-$roomId'));
+      },
+    ),
+    // Keep old single-player routes for reference
+    GoRoute(
+      path: '/single-player',
       builder: (context, state) => const MainMenuScreen(key: Key('main menu')),
       routes: [
         GoRoute(
@@ -86,11 +107,6 @@ final router = GoRouter(
               },
             ),
           ],
-        ),
-        GoRoute(
-          path: 'settings',
-          builder: (context, state) =>
-              const SettingsScreen(key: Key('settings')),
         ),
       ],
     ),
